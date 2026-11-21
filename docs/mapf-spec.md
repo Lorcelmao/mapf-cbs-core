@@ -4,8 +4,6 @@ Tài liệu này cố định mô hình Multi-Agent Path Finding mà mọi thàn
 
 Mô hình theo định nghĩa MAPF cổ điển của Stern và cộng sự (SoCS 2019, arXiv:1906.08291) và bài báo CBS của Sharon và cộng sự (AIJ 2015).
 
-Trạng thái: bản nháp của TV1, chờ TV2, TV3 và TV4 review ở Gate W1.
-
 ## 1. Bản đồ
 
 - Bản đồ là một lưới chữ nhật `height × width`. Mỗi ô hoặc đi được, hoặc là vật cản.
