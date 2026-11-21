@@ -101,16 +101,26 @@ SearchResult find_path(const Grid& grid, const HeuristicTable& heuristic, int st
     const int merge_time = constraints.latest_time() + 1;
     const int goal_hold_time = constraints.goal_hold_time();
 
+    // No path can end before goal_hold_time, so that time is a lower bound on
+    // the cost through any state as well. Taking the maximum keeps the
+    // heuristic consistent (both terms drop by at most 1 per move) and gives
+    // every state that is merely waiting for the goal to become free the same
+    // f-value, so the deepest-first tie-break heads straight for that time
+    // instead of expanding every cell at every earlier timestep.
+    const auto f_value = [&](int cell, int time) {
+        return std::max(time + heuristic.distance(cell), goal_hold_time);
+    };
+
     std::vector<Node> nodes;
     std::priority_queue<OpenEntry, std::vector<OpenEntry>, LowerPriority> open;
     // Smallest g found so far for each (cell, merged time) state.
     std::unordered_map<std::uint64_t, int> best_g;
 
     nodes.push_back(Node{start, 0, -1});
-    open.push(OpenEntry{heuristic.distance(start), 0, start, 0});
+    open.push(OpenEntry{f_value(start, 0), 0, start, 0});
     best_g.emplace(state_key(start, std::min(0, merge_time)), 0);
     result.generated = 1;
-    result.lower_bound = heuristic.distance(start);
+    result.lower_bound = f_value(start, 0);
 
     while (!open.empty()) {
         if ((result.expanded & 1023u) == 0 && std::chrono::steady_clock::now() >= deadline) {
@@ -150,7 +160,7 @@ SearchResult find_path(const Grid& grid, const HeuristicTable& heuristic, int st
             // Every cell reached from a reachable start can reach the goal on
             // the static grid, so its distance is finite and f cannot overflow.
             nodes.push_back(Node{next, next_time, current.node});
-            open.push(OpenEntry{next_time + heuristic.distance(next), next_time, next,
+            open.push(OpenEntry{f_value(next, next_time), next_time, next,
                                 static_cast<int>(nodes.size()) - 1});
             ++result.generated;
         }
